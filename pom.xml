@@ -9,11 +9,11 @@
 		<version>2.5.0</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.mercadona</groupId>
-	<artifactId>poc-mercadona-backend</artifactId>
+	<groupId>com.supermarket</groupId>
+	<artifactId>poc-supermarket-backend</artifactId>
 	<version>1.0.0</version>
-	<name>Poc Mercadona Backend</name>
-	<description>POC for upload files to HMI</description>
+	<name>POC Supermarket Backend</name>
+	<description>POC for upload files to HMI ovens</description>
 	<properties>
 		<java.version>21</java.version>
 		<org.mapstruct.version>1.6.0</org.mapstruct.version>

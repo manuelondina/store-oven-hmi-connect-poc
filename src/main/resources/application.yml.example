@@ -46,11 +46,11 @@ server:
     connection-timeout: 20s
 
 # Application-specific configuration
-# Use environment variables in production: ${MERCADONA_USERNAME:default_value}
-mercadona:
+# Use environment variables in production: ${SUPERMARKET_USERNAME:default_value}
+supermarket:
   users:
-    username: ${MERCADONA_USERNAME:Administrator}
-    password: ${MERCADONA_PASSWORD:changeme}
+    username: ${SUPERMARKET_USERNAME:Administrator}
+    password: ${SUPERMARKET_PASSWORD:changeme}
   ovens:
     # Development/testing oven
     maleta_ferchau: ${OVEN_MALETA_FERCHAU:192.168.0.3}

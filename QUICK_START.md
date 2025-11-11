@@ -72,8 +72,8 @@ cp src/main/resources/application.yml.example src/main/resources/application.yml
 
 2. **Set environment variables (recommended for production):**
 ```bash
-export MERCADONA_USERNAME=Administrator
-export MERCADONA_PASSWORD=your_password
+export SUPERMARKET_USERNAME=Administrator
+export SUPERMARKET_PASSWORD=your_password
 ```
 
 Or edit `application.yml` directly (for development only).

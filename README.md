@@ -1,4 +1,4 @@
-# Mercadona POC - HMI Oven File Upload System
+# Supermarket POC - HMI Oven File Upload System
 
 A Spring Boot application for managing and uploading recipe files to HMI ovens.
 
