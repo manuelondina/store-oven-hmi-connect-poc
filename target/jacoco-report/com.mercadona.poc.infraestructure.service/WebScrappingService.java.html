@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>WebScrappingService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Poc Mercadona Backend</a> &gt; <a href="index.source.html" class="el_package">com.mercadona.poc.infraestructure.service</a> &gt; <span class="el_source">WebScrappingService.java</span></div><h1>WebScrappingService.java</h1><pre class="source lang-java linenums">package com.mercadona.poc.infraestructure.service;
+
+import static com.mercadona.poc.constants.PocServerEnum.BOUNDARY;
+import static com.mercadona.poc.constants.PocServerEnum.FILES;
+import static com.mercadona.poc.constants.PocServerEnum.MULTIPART_CONTENT_TYPE;
+import static com.mercadona.poc.constants.PocServerEnum.PROTOCOL;
+import static com.mercadona.poc.constants.PocServerEnum.SIEMENS_COOKIE;
+import static com.mercadona.poc.constants.PocServerEnum.UP_SERVER;
+import static com.mercadona.poc.constants.PocServerEnum.VERBO;
+
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import com.mercadona.poc.constants.UpdatingTimeEnum;
+import com.mercadona.poc.infraestructure.dto.LoginDTO;
+import com.mercadona.poc.domain.UnzippedFiles;
+import com.mercadona.poc.domain.WebScraping;
+
+@Service
+<span class="nc" id="L34">public class WebScrappingService {</span>
+
+<span class="nc" id="L36">    private static final Logger LOGGER = LoggerFactory.getLogger(SendFilesService.class);</span>
+
+    // Web Scrapping Service
+    public List&lt;UnzippedFiles&gt; webScrapingService(List&lt;UnzippedFiles&gt; unzippedFiles, LoginDTO loginDTO)
+            throws IOException {
+        // Prepare the connection using the loginDTO data
+<span class="nc" id="L42">        HttpURLConnection connectionSend = prepareConnection(loginDTO);</span>
+        // Open the connection
+<span class="nc" id="L44">        connectionSend.connect();</span>
+        // Get the document from the connection
+<span class="nc" id="L46">        Document doc = Jsoup.connect(connectionSend.getURL().toString())</span>
+<span class="nc" id="L47">                .header(&quot;Cookie&quot;, connectionSend.getRequestProperty(&quot;Cookie&quot;))</span>
+<span class="nc" id="L48">                .get();</span>
+        // Extract the data from the document of the web page
+<span class="nc" id="L50">        List&lt;WebScraping&gt; extractedData = extractDataFromDocument(doc);</span>
+
+<span class="nc" id="L52">        return getNonExistentFiles(extractedData, unzippedFiles);</span>
+    }
+
+    // Prepare the connection method
+    private HttpURLConnection prepareConnection(LoginDTO loginDTO) throws IOException {
+<span class="nc" id="L57">        URL urlSend = new URL(PROTOCOL + loginDTO.getOvenHost() + FILES + UP_SERVER);</span>
+<span class="nc" id="L58">        HttpURLConnection connectionSend = (HttpURLConnection) urlSend.openConnection();</span>
+<span class="nc" id="L59">        connectionSend.setRequestProperty(&quot;Cookie&quot;, SIEMENS_COOKIE + loginDTO.getCookie());</span>
+<span class="nc" id="L60">        connectionSend.setRequestProperty(&quot;Content-Type&quot;, MULTIPART_CONTENT_TYPE + BOUNDARY);</span>
+<span class="nc" id="L61">        connectionSend.setRequestMethod(VERBO);</span>
+<span class="nc" id="L62">        connectionSend.setChunkedStreamingMode(0);</span>
+<span class="nc" id="L63">        connectionSend.setDoInput(true);</span>
+<span class="nc" id="L64">        connectionSend.setDoOutput(true);</span>
+<span class="nc" id="L65">        return connectionSend;</span>
+    }
+
+    // Extract the data from the document of the web page method
+    private List&lt;WebScraping&gt; extractDataFromDocument(Document doc) {
+
+<span class="nc" id="L71">        Element firstDiv = doc.select(&quot;div&quot;).first();</span>
+<span class="nc" id="L72">        Element table = firstDiv.select(&quot;table&quot;).first();</span>
+<span class="nc" id="L73">        Elements rows = table.select(&quot;tr&quot;);</span>
+        // Extract the data from the table in Browse File
+<span class="nc" id="L75">        List&lt;WebScraping&gt; extractedData = new ArrayList&lt;&gt;();</span>
+        // Format the date to compare it with the current date
+<span class="nc" id="L77">        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(&quot;EEE MMM d HH:mm:ss yyyy&quot;);</span>
+
+        // Extract the data from the table checking each column ignoring the first one
+        // for each row
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        for (int i = 0; i &lt; rows.size(); i++) {</span>
+<span class="nc" id="L82">            Element row = rows.get(i);</span>
+<span class="nc" id="L83">            Elements columns = row.select(&quot;td&quot;);</span>
+
+<span class="nc bnc" id="L85" title="All 2 branches missed.">            if (columns.size() &gt;= 2) {</span>
+                // Extract the name of the file
+<span class="nc" id="L87">                Element nameColumn = columns.get(1);</span>
+<span class="nc" id="L88">                String name = nameColumn.text();</span>
+                // Check if the file is valid
+<span class="nc bnc" id="L90" title="All 2 branches missed.">                if (isValidFile(name)) {</span>
+                    // Extract the file size
+<span class="nc" id="L92">                    Element sizeColumn = columns.get(2);</span>
+                    // Extract the date and time of the file
+<span class="nc" id="L94">                    Element dateTimeColumn = columns.get(4);</span>
+<span class="nc" id="L95">                    String size = sizeColumn.text();</span>
+<span class="nc" id="L96">                    String dateTime = dateTimeColumn.text();</span>
+
+                    try {
+                        // Format the date to compare it with the current date
+<span class="nc" id="L100">                        LocalDateTime uploadDateTime = LocalDateTime.parse(dateTime, dateFormatter);</span>
+                        // Check if the file was uploaded in the last 24 hours
+<span class="nc" id="L102">                        LocalDateTime twentyFourHoursBefore = LocalDateTime.now().minusHours(UpdatingTimeEnum.HOURS_BEFORE);</span>
+                        // Check if the file was uploaded in the next 24 hours
+<span class="nc" id="L104">                        LocalDateTime twentyFourHoursAfter = LocalDateTime.now().plusHours(UpdatingTimeEnum.HOURS_AFTER);</span>
+                        // Check if the file was uploaded in the range of 24 hours before and after
+<span class="nc bnc" id="L106" title="All 2 branches missed.">                        if (isWithinTimeRange(uploadDateTime, twentyFourHoursBefore, twentyFourHoursAfter)) {</span>
+<span class="nc" id="L107">                            WebScraping data = new WebScraping(name, size);</span>
+<span class="nc" id="L108">                            extractedData.add(data);</span>
+                        }
+<span class="nc" id="L110">                    } catch (DateTimeParseException e) {</span>
+                        // Handle the exception appropriately
+<span class="nc" id="L112">                        e.printStackTrace();</span>
+<span class="nc" id="L113">                    }</span>
+                }
+            }
+        }
+<span class="nc" id="L117">        return extractedData;</span>
+    }
+
+    // Check if the file is valid method
+    private boolean isValidFile(String name) {
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        return name.equalsIgnoreCase(&quot;Lista_1.txt&quot;)</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">                || name.endsWith(&quot;.html&quot;)</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">                || name.endsWith(&quot;.csv&quot;)</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">                || name.endsWith(&quot;.png&quot;)</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">                || name.endsWith(&quot;.exe&quot;);</span>
+    }
+
+    // Check if the file was uploaded in the range of 24 hours before and after
+    // method
+    private boolean isWithinTimeRange(LocalDateTime dateTime, LocalDateTime before, LocalDateTime after) {
+<span class="nc bnc" id="L132" title="All 4 branches missed.">        return dateTime.isAfter(before) &amp;&amp; dateTime.isBefore(after);</span>
+    }
+
+    // Get the non existent files method
+    private List&lt;UnzippedFiles&gt; getNonExistentFiles(List&lt;WebScraping&gt; extractedData,
+            List&lt;UnzippedFiles&gt; unzippedFiles) {
+<span class="nc" id="L138">        List&lt;UnzippedFiles&gt; nonExistentFiles = new ArrayList&lt;&gt;();</span>
+
+        // Check if the file exists in the list of unzipped files
+<span class="nc bnc" id="L141" title="All 2 branches missed.">        for (UnzippedFiles unzippedFile : unzippedFiles) {</span>
+<span class="nc" id="L142">            boolean fileExists = false;</span>
+            // Check if the file exists in the list of extracted data
+<span class="nc bnc" id="L144" title="All 2 branches missed.">            for (WebScraping data : extractedData) {</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">                if (unzippedFile.getName().equalsIgnoreCase(data.getName()) &amp;&amp;</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">                        unzippedFile.getSize().equals(data.getSize())) {</span>
+<span class="nc" id="L147">                    unzippedFile.setUploaded(true);</span>
+<span class="nc" id="L148">                    fileExists = true;</span>
+<span class="nc" id="L149">                    break;</span>
+                }
+<span class="nc" id="L151">            }</span>
+            // If the file doesn't exist in the list of extracted data, add it to the list
+            // of non existent files
+<span class="nc bnc" id="L154" title="All 2 branches missed.">            if (!fileExists) {</span>
+<span class="nc" id="L155">                String filePath = unzippedFile.getFilePath();</span>
+<span class="nc" id="L156">                unzippedFile.setFilePath(filePath);</span>
+<span class="nc" id="L157">                nonExistentFiles.add(unzippedFile);</span>
+            }
+<span class="nc" id="L159">        }</span>
+<span class="nc" id="L160">        return nonExistentFiles;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

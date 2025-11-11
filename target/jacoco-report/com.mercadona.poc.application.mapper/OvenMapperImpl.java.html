@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OvenMapperImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Poc Mercadona Backend</a> &gt; <a href="index.source.html" class="el_package">com.mercadona.poc.application.mapper</a> &gt; <span class="el_source">OvenMapperImpl.java</span></div><h1>OvenMapperImpl.java</h1><pre class="source lang-java linenums">package com.mercadona.poc.application.mapper;
+
+import com.mercadona.poc.application.dto.OvenDTO;
+import com.mercadona.poc.domain.Oven;
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.processing.Generated;
+import org.springframework.stereotype.Component;
+
+@Generated(
+    value = &quot;org.mapstruct.ap.MappingProcessor&quot;,
+    date = &quot;2025-11-11T13:24:03+0000&quot;,
+    comments = &quot;version: 1.5.5.Final, compiler: javac, environment: Java 17.0.17 (Eclipse Adoptium)&quot;
+)
+@Component
+<span class="nc" id="L16">public class OvenMapperImpl implements OvenMapper {</span>
+
+    @Override
+    public Oven toEntity(OvenDTO dto) {
+<span class="nc bnc" id="L20" title="All 2 branches missed.">        if ( dto == null ) {</span>
+<span class="nc" id="L21">            return null;</span>
+        }
+
+<span class="nc" id="L24">        Oven oven = new Oven();</span>
+
+<span class="nc" id="L26">        oven.setId( dto.getId() );</span>
+<span class="nc" id="L27">        oven.setName( dto.getName() );</span>
+<span class="nc" id="L28">        oven.setIpAddress( dto.getIpAddress() );</span>
+<span class="nc" id="L29">        oven.setLocation( dto.getLocation() );</span>
+
+<span class="nc" id="L31">        return oven;</span>
+    }
+
+    @Override
+    public OvenDTO toDto(Oven entity) {
+<span class="nc bnc" id="L36" title="All 2 branches missed.">        if ( entity == null ) {</span>
+<span class="nc" id="L37">            return null;</span>
+        }
+
+<span class="nc" id="L40">        OvenDTO ovenDTO = new OvenDTO();</span>
+
+<span class="nc" id="L42">        ovenDTO.setId( entity.getId() );</span>
+<span class="nc" id="L43">        ovenDTO.setName( entity.getName() );</span>
+<span class="nc" id="L44">        ovenDTO.setIpAddress( entity.getIpAddress() );</span>
+<span class="nc" id="L45">        ovenDTO.setLocation( entity.getLocation() );</span>
+
+<span class="nc" id="L47">        return ovenDTO;</span>
+    }
+
+    @Override
+    public List&lt;Oven&gt; toEntity(List&lt;OvenDTO&gt; dtoList) {
+<span class="nc bnc" id="L52" title="All 2 branches missed.">        if ( dtoList == null ) {</span>
+<span class="nc" id="L53">            return null;</span>
+        }
+
+<span class="nc" id="L56">        List&lt;Oven&gt; list = new ArrayList&lt;Oven&gt;( dtoList.size() );</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        for ( OvenDTO ovenDTO : dtoList ) {</span>
+<span class="nc" id="L58">            list.add( toEntity( ovenDTO ) );</span>
+<span class="nc" id="L59">        }</span>
+
+<span class="nc" id="L61">        return list;</span>
+    }
+
+    @Override
+    public List&lt;OvenDTO&gt; toDto(List&lt;Oven&gt; entityList) {
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        if ( entityList == null ) {</span>
+<span class="nc" id="L67">            return null;</span>
+        }
+
+<span class="nc" id="L70">        List&lt;OvenDTO&gt; list = new ArrayList&lt;OvenDTO&gt;( entityList.size() );</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        for ( Oven oven : entityList ) {</span>
+<span class="nc" id="L72">            list.add( toDto( oven ) );</span>
+<span class="nc" id="L73">        }</span>
+
+<span class="nc" id="L75">        return list;</span>
+    }
+
+    @Override
+    public void partialUpdate(Oven entity, OvenDTO dto) {
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        if ( dto == null ) {</span>
+<span class="nc" id="L81">            return;</span>
+        }
+
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        if ( dto.getId() != null ) {</span>
+<span class="nc" id="L85">            entity.setId( dto.getId() );</span>
+        }
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        if ( dto.getName() != null ) {</span>
+<span class="nc" id="L88">            entity.setName( dto.getName() );</span>
+        }
+<span class="nc bnc" id="L90" title="All 2 branches missed.">        if ( dto.getIpAddress() != null ) {</span>
+<span class="nc" id="L91">            entity.setIpAddress( dto.getIpAddress() );</span>
+        }
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        if ( dto.getLocation() != null ) {</span>
+<span class="nc" id="L94">            entity.setLocation( dto.getLocation() );</span>
+        }
+<span class="nc" id="L96">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

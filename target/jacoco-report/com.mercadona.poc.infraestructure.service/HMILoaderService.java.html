@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HMILoaderService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Poc Mercadona Backend</a> &gt; <a href="index.source.html" class="el_package">com.mercadona.poc.infraestructure.service</a> &gt; <span class="el_source">HMILoaderService.java</span></div><h1>HMILoaderService.java</h1><pre class="source lang-java linenums">package com.mercadona.poc.infraestructure.service;
+
+import static com.mercadona.poc.constants.PocServerEnum.PORT;
+import static com.mercadona.poc.constants.PocServerEnum.PROTOCOL;
+import static com.mercadona.poc.constants.PocServerEnum.SOAP_RUNTIME;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import com.mercadona.poc.constants.MessageTypeEnum;
+
+@Service
+public class HMILoaderService {
+
+    @Autowired
+    private SSEService sseService;
+
+<span class="nc" id="L30">    private static final Logger logger = LoggerFactory.getLogger(HMILoaderService.class);</span>
+
+    private final RestTemplate restTemplate;
+
+<span class="nc" id="L34">    public HMILoaderService(RestTemplate restTemplate) {</span>
+<span class="nc" id="L35">        this.restTemplate = restTemplate;</span>
+<span class="nc" id="L36">    }</span>
+
+    // Init HMI Load process
+    public int initHMILoad(String oven, String ovenURL, HttpHeaders headers)
+            throws IOException, InterruptedException {
+        try {
+            // Check if oven is connected
+<span class="nc" id="L43">            URL url = new URL(PROTOCOL + ovenURL + PORT + SOAP_RUNTIME);</span>
+<span class="nc bnc" id="L44" title="All 2 branches missed.">            if (!initHMILoadRequest(oven, url, headers)) {</span>
+<span class="nc" id="L45">                sseService.sendMessage(oven, MessageTypeEnum.ERRORCONEXIONHMI);</span>
+<span class="nc" id="L46">                logger.error(&quot;InitHMILoad: Error conectando al HMI.&quot;);</span>
+<span class="nc" id="L47">                return -1;</span>
+            }
+            // Set variable in ListaAcciones
+<span class="nc bnc" id="L50" title="All 2 branches missed.">            if (!listaAcciones(url, headers)) {</span>
+<span class="nc" id="L51">                sseService.sendMessage(oven, MessageTypeEnum.ERRORHMI);</span>
+<span class="nc" id="L52">                logger.error(&quot;InitHMILoad: Error seteando variable en ListaAcciones.&quot;);</span>
+<span class="nc" id="L53">                return -1;</span>
+            }
+            // Execute ListaAcciones
+<span class="nc bnc" id="L56" title="All 2 branches missed.">            if (!ejecutarListaAcciones(oven, url, headers)) {</span>
+<span class="nc" id="L57">                sseService.sendMessage(oven, MessageTypeEnum.ERRORHMI);</span>
+<span class="nc" id="L58">                logger.error(&quot;InitHMILoad: Error seteando variable en EjecutarListaAcciones.&quot;);</span>
+<span class="nc" id="L59">                return -1;</span>
+            }
+            // Get HMI response
+<span class="nc" id="L62">            String hmiResponse = hmiResponse(url, headers);</span>
+            // Handle HMI response and return the ID of the LibroRecetas
+<span class="nc bnc" id="L64" title="All 2 branches missed.">            if (hmiResponse.equals(&quot;2&quot;)) {</span>
+<span class="nc" id="L65">                int libroRecetas = getLibroRecetas(url, headers);</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">                if (libroRecetas != -1) {</span>
+<span class="nc" id="L67">                    logger.info(&quot;Activado el Libro de Recetas: {} para {}&quot;, libroRecetas, oven);</span>
+<span class="nc" id="L68">                    String libroRecetasString = String.valueOf(libroRecetas);</span>
+                    // Send message to the frontend with the ID of the LibroRecetas
+<span class="nc" id="L70">                    sseService.sendMessageAndValue(oven, MessageTypeEnum.IDLIBRO, libroRecetasString);</span>
+<span class="nc" id="L71">                    return 0;</span>
+                }
+<span class="nc" id="L73">            } else {</span>
+<span class="nc" id="L74">                handleHmiResponseError(oven, hmiResponse);</span>
+            }
+<span class="nc" id="L76">        } catch (URISyntaxException e) {</span>
+<span class="nc" id="L77">            return -1;</span>
+<span class="nc" id="L78">        }</span>
+<span class="nc" id="L79">        return 0;</span>
+    }
+
+    // Handle HMI response for errors of CSV or Lista_1.txt
+    private void handleHmiResponseError(String oven, String errorCode) throws IOException {
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        if (errorCode.equals(&quot;4&quot;)) {</span>
+<span class="nc" id="L85">            logger.error(&quot;Falta Lista_1.txt&quot;);</span>
+<span class="nc" id="L86">            sseService.sendMessage(oven, MessageTypeEnum.ERRORENLISTA1);</span>
+        } else {
+<span class="nc" id="L88">            logger.error(&quot;Error de CSV: {} en {}&quot;, errorCode, oven);</span>
+<span class="nc" id="L89">            sseService.sendMessageAndValue(oven, MessageTypeEnum.ERRORENCSV, errorCode);</span>
+        }
+<span class="nc" id="L91">    }</span>
+
+    // Init HMI Load process method
+    private boolean initHMILoadRequest(String oven, URL url, HttpHeaders headers)
+            throws IOException, URISyntaxException {
+<span class="nc" id="L96">        sseService.sendMessage(oven, MessageTypeEnum.CONECTANDOHMI);</span>
+<span class="nc" id="L97">        String requestXml = &quot;&lt;x:Envelope\r\n    xmlns:x=\&quot;http://schemas.xmlsoap.org/soap/envelope/\&quot;\r\n    xmlns:wsd=\&quot;http://tempuri.org/wsdl/\&quot;&gt;\r\n    &lt;x:Header/&gt;\r\n    &lt;x:Body&gt;\r\n        &lt;wsd:SetValue&gt;\r\n            &lt;wsd:A&gt;ResultAcciones&lt;/wsd:A&gt;\r\n            &lt;wsd:B&gt;''&lt;/wsd:B&gt;\r\n        &lt;/wsd:SetValue&gt;\r\n    &lt;/x:Body&gt;\r\n&lt;/x:Envelope&gt;&quot;;</span>
+<span class="nc" id="L98">        HttpEntity&lt;String&gt; requestEntity = new HttpEntity&lt;&gt;(requestXml, headers);</span>
+<span class="nc" id="L99">        URI uri = url.toURI();</span>
+<span class="nc" id="L100">        ResponseEntity&lt;String&gt; responseEntity = restTemplate.exchange(uri, HttpMethod.POST, requestEntity,</span>
+                String.class);
+
+<span class="nc" id="L103">        String responseBody = responseEntity.getBody();</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">        if (responseBody != null) {</span>
+<span class="nc" id="L105">            int pos = responseBody.indexOf(&quot;&lt;Result&gt;&quot;, 0);</span>
+<span class="nc" id="L106">            String result = responseBody.substring(pos + 8, pos + 9);</span>
+<span class="nc" id="L107">            return result.equals(&quot;0&quot;);</span>
+        }
+<span class="nc" id="L109">        return false;</span>
+    }
+
+    // Set variable in ListaAcciones method
+    private boolean listaAcciones(URL url, HttpHeaders headers) throws URISyntaxException {
+<span class="nc" id="L114">        String lista1 = &quot;Lista_1&quot;;</span>
+<span class="nc" id="L115">        String requestXml = &quot;&lt;x:Envelope\r\n    xmlns:x=\&quot;http://schemas.xmlsoap.org/soap/envelope/\&quot;\r\n    xmlns:wsd=\&quot;http://tempuri.org/wsdl/\&quot;&gt;\r\n    &lt;x:Header/&gt;\r\n    &lt;x:Body&gt;\r\n        &lt;wsd:SetValue&gt;\r\n            &lt;wsd:A&gt;ListaAcciones&lt;/wsd:A&gt;\r\n            &lt;wsd:B&gt;&quot;</span>
+                + lista1
+                + &quot;&lt;/wsd:B&gt;\r\n        &lt;/wsd:SetValue&gt;\r\n    &lt;/x:Body&gt;\r\n&lt;/x:Envelope&gt;&quot;;
+<span class="nc" id="L118">        HttpEntity&lt;String&gt; requestEntity = new HttpEntity&lt;&gt;(requestXml, headers);</span>
+<span class="nc" id="L119">        URI uri = url.toURI();</span>
+<span class="nc" id="L120">        ResponseEntity&lt;String&gt; responseEntity = restTemplate.exchange(uri, HttpMethod.POST, requestEntity,</span>
+                String.class);
+
+<span class="nc" id="L123">        String responseBody = responseEntity.getBody();</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">        if (responseBody != null) {</span>
+<span class="nc" id="L125">            int pos = responseBody.indexOf(&quot;&lt;Result&gt;&quot;, 0);</span>
+<span class="nc" id="L126">            String result = responseBody.substring(pos + 8, pos + 9);</span>
+<span class="nc" id="L127">            return result.equals(&quot;0&quot;);</span>
+        }
+<span class="nc" id="L129">        return false;</span>
+    }
+
+    // Execute ListaAcciones method
+    private boolean ejecutarListaAcciones(String oven, URL url, HttpHeaders headers)
+            throws IOException, URISyntaxException {
+<span class="nc" id="L135">        sseService.sendMessage(oven, MessageTypeEnum.ACTIVANDOLIBRO);</span>
+<span class="nc" id="L136">        String requestXml = &quot;&lt;x:Envelope\r\n    xmlns:x=\&quot;http://schemas.xmlsoap.org/soap/envelope/\&quot;\r\n    xmlns:wsd=\&quot;http://tempuri.org/wsdl/\&quot;&gt;\r\n    &lt;x:Header/&gt;\r\n    &lt;x:Body&gt;\r\n        &lt;wsd:SetValue&gt;\r\n            &lt;wsd:A&gt;EjecutarListaAcciones&lt;/wsd:A&gt;\r\n            &lt;wsd:B&gt;1&lt;/wsd:B&gt;\r\n        &lt;/wsd:SetValue&gt;\r\n    &lt;/x:Body&gt;\r\n&lt;/x:Envelope&gt;&quot;;</span>
+<span class="nc" id="L137">        HttpEntity&lt;String&gt; requestEntity = new HttpEntity&lt;&gt;(requestXml, headers);</span>
+<span class="nc" id="L138">        URI uri = url.toURI();</span>
+<span class="nc" id="L139">        ResponseEntity&lt;String&gt; responseEntity = restTemplate.exchange(uri, HttpMethod.POST, requestEntity,</span>
+                String.class);
+
+<span class="nc" id="L142">        String responseBody = responseEntity.getBody();</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        if (responseBody != null) {</span>
+<span class="nc" id="L144">            int pos = responseBody.indexOf(&quot;&lt;Result&gt;&quot;, 0);</span>
+<span class="nc" id="L145">            String result = responseBody.substring(pos + 8, pos + 9);</span>
+<span class="nc" id="L146">            return result.equals(&quot;0&quot;);</span>
+        }
+<span class="nc" id="L148">        return false;</span>
+    }
+
+    // Get HMI response method
+    private String hmiResponse(URL url, HttpHeaders headers) throws InterruptedException, URISyntaxException {
+<span class="nc" id="L153">        int numReintentos = 150;</span>
+        // Wait for HMI response to change from 1 to 2, 3 or 4
+<span class="nc bnc" id="L155" title="All 2 branches missed.">        for (int i = 1; i &lt; numReintentos; i++) {</span>
+<span class="nc" id="L156">            Thread.sleep(2000);</span>
+<span class="nc" id="L157">            String requestXml = &quot;&lt;soapenv:Envelope xmlns:soapenv=\&quot;http://schemas.xmlsoap.org/soap/envelope/\&quot; xmlns:wsdl=\&quot;http://tempuri.org/wsdl/\&quot;&gt;\r\n   &lt;soapenv:Header/&gt;\r\n   &lt;soapenv:Body&gt;\r\n      &lt;wsdl:GetValue&gt;\r\n         &lt;A type=\&quot;\&quot;xsd:string\&quot;\&quot;&gt;\&quot;ResultAcciones\&quot;&lt;/A&gt;\r\n      &lt;/wsdl:GetValue&gt;\r\n   &lt;/soapenv:Body&gt;\r\n&lt;/soapenv:Envelope&gt;&quot;;</span>
+<span class="nc" id="L158">            HttpEntity&lt;String&gt; requestEntity = new HttpEntity&lt;&gt;(requestXml, headers);</span>
+<span class="nc" id="L159">            URI uri = url.toURI();</span>
+<span class="nc" id="L160">            ResponseEntity&lt;String&gt; responseEntity = restTemplate.exchange(uri, HttpMethod.POST, requestEntity,</span>
+                    String.class);
+<span class="nc" id="L162">            String responseBody = responseEntity.getBody();</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">            if (responseBody != null) {</span>
+<span class="nc" id="L164">                int pos = responseBody.indexOf(&quot;&lt;Result&gt;&quot;, 0);</span>
+<span class="nc" id="L165">                String result = responseBody.substring(pos);</span>
+<span class="nc" id="L166">                String[] sSplit = result.split(&quot;\\|&quot;);</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">                result = (sSplit.length &gt; 1) ? sSplit[1] : &quot;&quot;;</span>
+                // Check if HMI response is 2, 3 or 4
+<span class="nc bnc" id="L169" title="All 2 branches missed.">                if (result.equals(&quot;2&quot;)) {</span>
+<span class="nc" id="L170">                    return &quot;2&quot;;</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">                } else if (result.equals(&quot;4&quot;)) {</span>
+<span class="nc" id="L172">                    return &quot;4&quot;;</span>
+<span class="nc bnc" id="L173" title="All 4 branches missed.">                } else if (result.equals(&quot;3&quot;) &amp;&amp; sSplit.length &gt; 2) {</span>
+<span class="nc" id="L174">                    StringBuilder restOfString = new StringBuilder(removeFirstDigit(sSplit[2]));</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">                    for (int j = 3; j &lt; sSplit.length; j++) {</span>
+<span class="nc" id="L176">                        restOfString.append(&quot;|&quot;).append(removeFirstDigit(sSplit[j]));</span>
+                    }
+<span class="nc" id="L178">                    String[] splitResult = restOfString.toString().split(&quot;&lt;/Result&gt;&quot;);</span>
+<span class="nc" id="L179">                    return splitResult[0];</span>
+                }
+            }
+        }
+<span class="nc" id="L183">        return null;</span>
+    }
+
+    // Remove first digit from string for the HMI response when error it is 3 to not
+    // add the 7
+    private String removeFirstDigit(String str) {
+<span class="nc bnc" id="L189" title="All 2 branches missed.">        if (str.length() &gt; 1) {</span>
+<span class="nc" id="L190">            return str.substring(1);</span>
+        }
+<span class="nc" id="L192">        return str;</span>
+    }
+
+    // Get LibroRecetas method that returns the ID of the LibroRecetas
+    private int getLibroRecetas(URL url, HttpHeaders headers) throws InterruptedException, URISyntaxException {
+<span class="nc" id="L197">        int numReintentos = 150;</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">        for (int i = 1; i &lt; numReintentos; i++) {</span>
+<span class="nc" id="L199">            Thread.sleep(2000);</span>
+<span class="nc" id="L200">            String requestXml = &quot;&lt;soapenv:Envelope xmlns:soapenv=\&quot;http://schemas.xmlsoap.org/soap/envelope/\&quot; xmlns:wsdl=\&quot;http://tempuri.org/wsdl/\&quot;&gt;\r\n   &lt;soapenv:Header/&gt;\r\n   &lt;soapenv:Body&gt;\r\n      &lt;wsdl:GetValue&gt;\r\n         &lt;A type=\&quot;\&quot;xsd:string\&quot;\&quot;&gt;\&quot;ID_Libro_Recetas\&quot;&lt;/A&gt;\r\n      &lt;/wsdl:GetValue&gt;\r\n   &lt;/soapenv:Body&gt;\r\n&lt;/soapenv:Envelope&gt;&quot;;</span>
+<span class="nc" id="L201">            HttpEntity&lt;String&gt; requestEntity = new HttpEntity&lt;&gt;(requestXml, headers);</span>
+<span class="nc" id="L202">            URI uri = url.toURI();</span>
+<span class="nc" id="L203">            ResponseEntity&lt;String&gt; responseEntity = restTemplate.exchange(uri, HttpMethod.POST, requestEntity,</span>
+                    String.class);
+<span class="nc" id="L205">            String responseBody = responseEntity.getBody();</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">            if (responseBody != null) {</span>
+<span class="nc" id="L207">                int startTagPos = responseBody.indexOf(&quot;&lt;Result&gt;&quot;) + &quot;&lt;Result&gt;&quot;.length();</span>
+<span class="nc" id="L208">                int endTagPos = responseBody.indexOf(&quot;&lt;/Result&gt;&quot;, startTagPos);</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">                if (endTagPos != -1) {</span>
+<span class="nc" id="L210">                    String result = responseBody.substring(startTagPos, endTagPos).trim();</span>
+<span class="nc" id="L211">                    int idRecetas = Integer.parseInt(result);</span>
+<span class="nc" id="L212">                    return idRecetas;</span>
+                }
+            }
+        }
+<span class="nc" id="L216">        return -1;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FileUtilities.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Poc Mercadona Backend</a> &gt; <a href="index.source.html" class="el_package">com.mercadona.poc.infraestructure.utilities</a> &gt; <span class="el_source">FileUtilities.java</span></div><h1>FileUtilities.java</h1><pre class="source lang-java linenums">package com.mercadona.poc.infraestructure.utilities;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Stream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.mercadona.poc.infraestructure.service.SendFilesService;
+
+public class FileUtilities {
+
+<span class="nc" id="L16">	private static final Logger LOGGER = LoggerFactory.getLogger(SendFilesService.class);</span>
+
+	private FileUtilities() {
+	}
+
+	// Delete all files and directories inside the parent folder for each oven copy
+	// zip file
+	public static void deleteAll(List&lt;Path&gt; listaFiles) {
+
+		// Get the parent folder of the files
+<span class="nc" id="L26">		Path parentFolder = listaFiles.get(0).getParent();</span>
+
+		// Check if the listaFiles is not empty
+<span class="nc bnc" id="L29" title="All 2 branches missed.">		if (listaFiles.isEmpty()) {</span>
+<span class="nc" id="L30">			LOGGER.warn(&quot;La lista de ficheros estaba vacia, no se han borrado. {}&quot;, parentFolder);</span>
+<span class="nc" id="L31">			return;</span>
+		}
+
+<span class="nc" id="L34">		try (Stream&lt;Path&gt; pathStream = Files.walk(parentFolder)) {</span>
+			// Delete all files and directories inside the parent folder
+<span class="nc" id="L36">			pathStream.sorted((p1, p2) -&gt; -p1.compareTo(p2)) // Delete from innermost to outermost</span>
+<span class="nc" id="L37">					.forEach(path -&gt; {</span>
+						try {
+<span class="nc" id="L39">							Files.delete(path);</span>
+<span class="nc" id="L40">						} catch (IOException e) {</span>
+<span class="nc" id="L41">							LOGGER.error(&quot;Error en el borrado. {}&quot;, path);</span>
+<span class="nc" id="L42">							e.printStackTrace();</span>
+<span class="nc" id="L43">						}</span>
+<span class="nc" id="L44">					});</span>
+
+			// Delete the parent folder itself
+<span class="nc" id="L47">			Files.deleteIfExists(parentFolder);</span>
+<span class="nc" id="L48">		} catch (IOException e) {</span>
+<span class="nc" id="L49">			LOGGER.error(&quot;Error en el borrado.&quot;, e);</span>
+<span class="nc" id="L50">			e.printStackTrace();</span>
+<span class="nc" id="L51">		}</span>
+<span class="nc" id="L52">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

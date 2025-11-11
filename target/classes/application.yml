@@ -1,0 +1,143 @@
+spring:
+  datasource:
+    url: jdbc:h2:file:./mercadonaovens;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+
+  main:
+    allow-bean-definition-overriding: true
+
+  profiles:
+    active:
+      - local
+  mvc:
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
+
+  cloud:
+    config:
+      enabled: false
+      import: "optional:configserver:"
+
+  servlet:
+    multipart:
+      resolve-lazily: true
+      enabled: true
+      max-file-size: -1
+      max-request-size: 30MB
+      maxFileSize: 10Mb
+      maxRequestSize: 10Mb
+server:
+  tomcat:
+    max-swallow-size: 100MB
+    connection-timeout: 20s
+
+mercadona:
+  users:
+    username: Administrator
+    password: kL9mF2sE6xW8hG7bN4jP # Maleta ferchau
+    # password: GLcXab8dGfKNb3ybLj4V
+  ovens:
+    maleta_ferchau: 192.168.0.3
+    laboratorio_itg_3: 10.173.31.233
+    laboratorio_itg_2: 10.173.31.101
+    laboratorio_itg_1: 10.173.30.231
+
+    CINE_HERCUMAR_1: 10.160.226.101
+
+    CINE_HERCUMAR_2: 10.160.226.103
+
+    CINE_HERCUMAR_3: 10.160.226.105
+
+    CINE_HERCUMAR_4: 10.160.226.107
+
+    TEODORO_LLORENTE_1: 10.161.79.101
+
+    TEODORO_LLORENTE_2: 10.161.79.103
+
+    TEODORO_LLORENTE_3: 10.161.79.105
+
+    TEODORO_LLORENTE_4: 10.161.79.107
+
+    DUC_DE_LLIRIA_1: 10.161.161.101
+
+    DUC_DE_LLIRIA_2: 10.161.161.103
+
+    DUC_DE_LLIRIA_3: 10.161.161.105
+
+    DUC_DE_LLIRIA_4: 10.161.161.107
+
+    RIBA-ROJA_1: 10.161.172.229
+
+    RIBA-ROJA_2: 10.161.172.231
+
+    RIBA-ROJA_3: 10.161.172.233
+
+    RIBA-ROJA_4: 10.161.172.235
+
+    RIBA-ROJA_5: 10.161.172.237
+
+    BENAGUASIL_1: 10.162.193.101
+
+    BENAGUASIL_2: 10.162.193.103
+
+    BENAGUASIL_3: 10.162.193.105
+
+    BENAGUASIL_4: 10.162.193.107
+
+    AVDA_ROSAS_1: 10.163.111.229
+
+    AVDA_ROSAS_2: 10.163.111.231
+
+    AVDA_ROSAS_3: 10.163.111.233
+
+    AVDA_ROSAS_4: 10.163.111.235
+
+    AVDA_ROSAS_5: 10.163.111.237
+
+    SANTA_GEMMA_1: 10.163.217.101
+
+    SANTA_GEMMA_2: 10.163.217.103
+
+    SANTA_GEMMA_3: 10.163.217.105
+
+    SANTA_GEMMA_4: 10.163.217.107
+
+    SANTA_GEMMA_5: 10.163.217.109
+
+    CRTA_LLIRIA_1: 10.164.228.101
+
+    CRTA_LLIRIA_2: 10.164.228.103
+
+    CRTA_LLIRIA_3: 10.164.228.105
+
+    CRTA_LLIRIA_4: 10.164.228.107
+
+    BUNOL_1: 10.165.83.229
+
+    BUNOL_2: 10.165.83.231
+
+    BUNOL_3: 10.165.83.233
+
+    BUNOL_4: 10.165.83.235
+
+    BOVALAR_1: 10.165.90.101
+
+    BOVALAR_2: 10.165.90.103
+
+    BOVALAR_3: 10.165.90.105
+
+    BOVALAR_4: 10.165.90.107
+
+logging:
+  level:
+    root: INFO

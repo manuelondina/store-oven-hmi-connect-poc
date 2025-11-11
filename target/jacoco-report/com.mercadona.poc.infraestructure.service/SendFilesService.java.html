@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SendFilesService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Poc Mercadona Backend</a> &gt; <a href="index.source.html" class="el_package">com.mercadona.poc.infraestructure.service</a> &gt; <span class="el_source">SendFilesService.java</span></div><h1>SendFilesService.java</h1><pre class="source lang-java linenums">package com.mercadona.poc.infraestructure.service;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+
+import com.mercadona.poc.constants.MessageTypeEnum;
+import com.mercadona.poc.infraestructure.dto.LoginDTO;
+import com.mercadona.poc.domain.UnzippedFiles;
+import com.mercadona.poc.infraestructure.utilities.FileUtilities;
+import com.mercadona.poc.infraestructure.utilities.Utilities;
+
+@Service
+<span class="nc" id="L26">public class SendFilesService {</span>
+
+<span class="nc" id="L28">	private static final Logger LOGGER = LoggerFactory.getLogger(SendFilesService.class);</span>
+
+	@Autowired
+	private LoginService loginService;
+
+	@Autowired
+	private SendFileToServerService fileServer;
+
+	@Autowired
+	private SSEService emitterService;
+
+	@Autowired
+	private HMILoaderService hmiLoaderService;
+
+	@Autowired
+	private WebScrappingService webScrappingService;
+
+	// TODO Delete files from server
+	// @Autowired
+	// private DeleteFilesFromServer deleteFilesFromServer;
+
+	// Send files to the oven
+	public void sendCookBook(String folderPath, String ovenName) throws IOException, InterruptedException {
+		LoginDTO loginDTO;
+<span class="nc" id="L52">		loginDTO = loginService.login(ovenName);</span>
+<span class="nc" id="L53">		LOGGER.info(&quot;Inicio servicio&quot;);</span>
+<span class="nc" id="L54">		emitterService.sendMessage(ovenName, MessageTypeEnum.INICIANDO);</span>
+
+		// Get the list of all files in the folder
+<span class="nc" id="L57">		List&lt;Path&gt; filePaths = Files.walk(Paths.get(folderPath))</span>
+<span class="nc" id="L58">				.filter(Files::isRegularFile)</span>
+<span class="nc" id="L59">				.collect(Collectors.toList());</span>
+
+		// Counters for the emitter service to send the messages of the files uploaded
+<span class="nc" id="L62">		int uploadCounter = 0;</span>
+<span class="nc" id="L63">		int contadorListaFiles = filePaths.size();</span>
+
+<span class="nc" id="L65">		emitterService.sendMessage(ovenName, MessageTypeEnum.SUBIENDO);</span>
+		// List of files to be uploaded
+<span class="nc" id="L67">		List&lt;UnzippedFiles&gt; unzippedFiles = uploadFilesToOven(filePaths, ovenName, loginDTO);</span>
+		// List of files that were not uploaded
+<span class="nc" id="L69">		List&lt;UnzippedFiles&gt; nonExistentFiles = new ArrayList&lt;&gt;();</span>
+		// Retry counter
+<span class="nc" id="L71">		int retries = 0;</span>
+		// Max number of retries
+<span class="nc" id="L73">		final int maxRetries = 5;</span>
+		// While there are non-existent files and the number of retries is less than the
+		// max number of retries
+<span class="nc bnc" id="L76" title="All 4 branches missed.">		while (nonExistentFiles.isEmpty() &amp;&amp; retries &lt; maxRetries) {</span>
+			// Get the list of non-existent files
+<span class="nc" id="L78">			nonExistentFiles = webScrappingService.webScrapingService(unzippedFiles, loginDTO);</span>
+			// If there are non-existent files then re-send them
+<span class="nc bnc" id="L80" title="All 2 branches missed.">			if (!nonExistentFiles.isEmpty()) {</span>
+<span class="nc" id="L81">				LOGGER.info(&quot;Re-enviando archivos faltantes para {} (Reintentos {}/{})&quot;, ovenName, retries, maxRetries);</span>
+				// List of files to be uploaded if they are not uploaded
+<span class="nc" id="L83">				List&lt;Path&gt; nonExistentFilesAsPaths = nonExistentFiles.stream()</span>
+<span class="nc" id="L84">						.map(unzippedFile -&gt; Paths.get(unzippedFile.getFilePath()))</span>
+<span class="nc" id="L85">						.collect(Collectors.toList());</span>
+				// Upload the non-existent files
+<span class="nc" id="L87">				uploadFilesToOven(nonExistentFilesAsPaths, ovenName, loginDTO);</span>
+<span class="nc" id="L88">				retries++;</span>
+<span class="nc" id="L89">			} else {</span>
+				break;
+			}
+		}
+		// If the number of retries is equal to the max number of retries and there are
+		// non-existent files
+		// then send an error message that there is an error in the zip file.
+<span class="nc bnc" id="L96" title="All 4 branches missed.">		if (retries == maxRetries &amp;&amp; !nonExistentFiles.isEmpty()) {</span>
+<span class="nc" id="L97">			emitterService.sendMessage(ovenName, MessageTypeEnum.ERRORENZIP);</span>
+<span class="nc" id="L98">			LOGGER.error(&quot;Error de lectura. Maximo numero de reintentos.&quot;);</span>
+		}
+		// Count the number of the non-existent files and subtract it from the total
+		// number of files
+<span class="nc" id="L102">		int nonExistentCounter = countUploadedFiles(nonExistentFiles);</span>
+		// Count the number of files uploaded after the retries.
+<span class="nc" id="L104">		uploadCounter = contadorListaFiles - nonExistentCounter;</span>
+		// Send the message of the total number of files uploaded after the retries if
+		// there are any.
+<span class="nc" id="L107">		LOGGER.info(&quot;Total files uploaded to {}: {}/{}&quot;, ovenName, uploadCounter, contadorListaFiles);</span>
+<span class="nc" id="L108">		emitterService.sendMessageAndCounters(ovenName, MessageTypeEnum.TERMINADO, uploadCounter, contadorListaFiles);</span>
+
+		// Encode the user and password to send the request to the HMI
+<span class="nc" id="L111">		String encodedUserPassword = Utilities.encodeToBase64(loginDTO.getUser(), loginDTO.getPassword());</span>
+		// Set the headers for the request to the HMI
+<span class="nc" id="L113">		HttpHeaders headers = new HttpHeaders();</span>
+<span class="nc" id="L114">		headers.setContentType(MediaType.TEXT_XML);</span>
+<span class="nc" id="L115">		headers.add(&quot;SOAPAction&quot;, &quot;http://tempuri.org/SetValue&quot;);</span>
+<span class="nc" id="L116">		headers.add(&quot;Authorization&quot;, encodedUserPassword);</span>
+		// Send the request to the HMI
+<span class="nc" id="L118">		hmiLoaderService.initHMILoad(ovenName, loginDTO.getOvenHost(), headers);</span>
+		// Finish the service
+<span class="nc" id="L120">		LOGGER.info(&quot;Fin del servicio servicio&quot;);</span>
+
+		// Delete the folder from the server when the service is finished
+<span class="nc" id="L123">		FileUtilities.deleteAll(filePaths);</span>
+<span class="nc" id="L124">	}</span>
+
+	// Upload the files to the oven in a parallel system
+	private List&lt;UnzippedFiles&gt; uploadFilesToOven(List&lt;Path&gt; filePaths, String ovenName, LoginDTO loginDTO)
+			throws IOException {
+<span class="nc" id="L129">		List&lt;UnzippedFiles&gt; unzippedFiles = new ArrayList&lt;&gt;();</span>
+
+<span class="nc bnc" id="L131" title="All 2 branches missed.">		for (Path filePath : filePaths) {</span>
+<span class="nc" id="L132">			File file = filePath.toFile();</span>
+			// If the file is not a directory then upload it
+<span class="nc bnc" id="L134" title="All 2 branches missed.">			if (!file.isDirectory()) {</span>
+				// Convert the file size to a string and add the unit for each case to equal the
+				// scraper service
+<span class="nc" id="L137">				String fileName = file.getName();</span>
+<span class="nc" id="L138">				long fileSize = file.length();</span>
+				String fileSizeString;
+<span class="nc bnc" id="L140" title="All 2 branches missed.">				if (fileSize &lt;= 9999) {</span>
+<span class="nc" id="L141">					fileSizeString = Long.toString(fileSize);</span>
+				} else {
+<span class="nc" id="L143">					double size = Math.floor(fileSize / 1024.0);</span>
+<span class="nc" id="L144">					String unit = &quot;K&quot;;</span>
+<span class="nc" id="L145">					fileSizeString = String.format(&quot;%.0f %s&quot;, size, unit);</span>
+				}
+				// Add the file to the list of unzipped files to compare it with the list of
+				// files from the scraper
+<span class="nc" id="L149">				UnzippedFiles unzippedFile = new UnzippedFiles(fileName, fileSizeString, false, file.getAbsolutePath());</span>
+				// File uploader to HMI
+				try {
+<span class="nc" id="L152">					fileServer.sendFile(file, loginDTO);</span>
+<span class="nc" id="L153">					LOGGER.info(&quot;Subiendo: {} to oven {}&quot;, file.getName(), ovenName);</span>
+					// Thread sleep to avoid the error of the file not being uploaded
+<span class="nc" id="L155">					Thread.sleep(1500);</span>
+<span class="nc" id="L156">				} catch (InterruptedException | IOException e) {</span>
+<span class="nc" id="L157">					emitterService.sendMessageAndValue(ovenName, MessageTypeEnum.ERRORARCHIVO, file.getName());</span>
+<span class="nc" id="L158">					LOGGER.error(&quot;File failed: {} to oven {}&quot;, file.getName(), ovenName);</span>
+<span class="nc" id="L159">				}</span>
+<span class="nc" id="L160">				unzippedFiles.add(unzippedFile);</span>
+			}
+<span class="nc" id="L162">		}</span>
+
+<span class="nc" id="L164">		return unzippedFiles;</span>
+	}
+
+	// Count the number of files uploaded
+	private int countUploadedFiles(List&lt;UnzippedFiles&gt; unzippedFiles) {
+<span class="nc" id="L169">		int uploadCounter = 0;</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">		for (UnzippedFiles unzippedFile : unzippedFiles) {</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">			if (unzippedFile.isUploaded()) {</span>
+<span class="nc" id="L172">				uploadCounter++;</span>
+			}
+<span class="nc" id="L174">		}</span>
+<span class="nc" id="L175">		return uploadCounter;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
