@@ -2,10 +2,9 @@ package com.mercadona.poc.infraestructure.service;
 
 import com.mercadona.poc.constants.MessageTypeEnum;
 import com.mercadona.poc.domain.StartJobRequest;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -25,16 +24,13 @@ import java.util.concurrent.CompletableFuture;
 
 import static com.mercadona.poc.constants.PocConstansEnum.STATUS_ACCEPTED;
 
+@Slf4j
+@RequiredArgsConstructor
 @Service
 public class TraceService {
 
-    @Autowired
-    SendFilesService sendFilesService;
-
-    @Autowired
-    SSEService emitterService;
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(TraceService.class);
+    private final SendFilesService sendFilesService;
+    private final SSEService emitterService;
 
 
     public String getCurrentTrace() {
@@ -54,7 +50,7 @@ public class TraceService {
             copyFilesForOvens(pathFolder, ovenNames);
             processFilesForOvensAsync(pathFolder, ovenNames);
 
-            LOGGER.info("Number of threads: {}", Thread.activeCount());
+            log.info("Number of threads: {}", Thread.activeCount());
             return ResponseEntity.ok("Number of threads: " + Thread.activeCount());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred: " + e.getMessage());
@@ -93,7 +89,7 @@ public class TraceService {
     private boolean validateFolderExists(String pathFolder) {
         File folder = new File(pathFolder);
         if (folder.exists() && folder.isDirectory()) {
-            LOGGER.info("Iniciando copiado de carpetas.");
+            log.info("Iniciando copiado de carpetas.");
             return true;
         }
         return false;
@@ -105,7 +101,7 @@ public class TraceService {
             File ovenCopyFolder = new File(new File(pathFolder).getParent(), ovenCopyFolderName);
             copyDirectoryWithVerification(new File(pathFolder), ovenCopyFolder);
         }
-        LOGGER.info("Creando copias de carpetas...");
+        log.info("Creando copias de carpetas...");
     }
 
     private void processFilesForOvensAsync(String pathFolder, String[] ovenNames) {
@@ -136,7 +132,7 @@ public class TraceService {
 
         Duration elapsedTime = Duration.between(time1, LocalTime.now());
         String message = elapsedTime.getSeconds() + " segundos";
-        LOGGER.info("Tiempo transcurrido: {}", message);
+        log.info("Tiempo transcurrido: {}", message);
         emitterService.sendMessageAndValue(ovenName, MessageTypeEnum.TIEMPO, message);
     }
 
@@ -149,7 +145,6 @@ public class TraceService {
         }
     }
 
-    // Create a copy of the file for each oven
     private String createOvenCopyPath(String originalFilePath, String ovenName) throws IOException {
         Path originalPath = Paths.get(originalFilePath);
         String originalFileName = originalPath.getFileName().toString();
@@ -160,7 +155,6 @@ public class TraceService {
         return ovenCopyPath.toString();
     }
 
-    // Delete the duplicated files
     private void deleteFiles(String[] ovenNames) throws IOException {
         String currentPath = System.getProperty("user.dir");
         String parentDirectory = new File(currentPath).getParent();
@@ -186,7 +180,6 @@ public class TraceService {
         }
     }
 
-    // Calculate the hash for a file
     private String calculateSHA256(Path filePath) throws Exception {
         MessageDigest sha256Digest = MessageDigest.getInstance("SHA-256");
         byte[] fileBytes = Files.readAllBytes(filePath);
@@ -194,14 +187,12 @@ public class TraceService {
         return bytesToHex(hashBytes);
     }
 
-    // Checking both hashes
     private boolean isFileCopySuccessful(Path sourcePath, Path destPath) throws Exception {
         String sourceHash = calculateSHA256(sourcePath);
         String destHash = calculateSHA256(destPath);
         return sourceHash.equals(destHash);
     }
 
-    // Conversion bytes to Hex
     private String bytesToHex(byte[] bytes) {
         StringBuilder hexString = new StringBuilder(2 * bytes.length);
         for (int i = 0; i < bytes.length; i++) {
@@ -214,7 +205,6 @@ public class TraceService {
         return hexString.toString();
     }
 
-    // Checking if the copy has been done correctly. If not, retry
     private void copyDirectoryWithVerification(File sourceFolder, File destFolder) throws Exception {
         FileUtils.copyDirectory(sourceFolder, destFolder);
 

@@ -5,11 +5,10 @@ import com.mercadona.poc.application.service.OvenService;
 import com.mercadona.poc.infraestructure.exception.IdMismatchException;
 import com.mercadona.poc.infraestructure.exception.InvalidOvenException;
 import com.mercadona.poc.infraestructure.exception.IpAddressInUseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,18 +18,16 @@ import javax.validation.Valid;
 import java.util.Objects;
 import java.util.Optional;
 
-
+/**
+ * REST controller for oven CRUD operations.
+ */
+@Slf4j
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api")
 public class OvenController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TraceController.class);
-
     private final OvenService ovenService;
-
-    public OvenController(OvenService ovenService) {
-        this.ovenService = ovenService;
-    }
 
     @PostMapping("/ovens")
     public ResponseEntity<OvenDTO> createOven(@Valid @RequestBody OvenDTO ovenDTO) {

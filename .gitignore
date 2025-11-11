@@ -22,3 +22,38 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.settings/
+
+# Build
+target/
+build/
+out/
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# Database
+*.db
+mercadonaovens.mv.db
+mercadonaovens.trace.db
+
+# Application config with sensitive data
+# Keep application.yml.example and use environment variables
+application-prod.yml
+application-*.yml
+!application.yml.example
+
+# OS
+.DS_Store
+Thumbs.db

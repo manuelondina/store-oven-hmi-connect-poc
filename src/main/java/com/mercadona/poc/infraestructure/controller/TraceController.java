@@ -3,15 +3,12 @@ package com.mercadona.poc.infraestructure.controller;
 import static com.mercadona.poc.constants.PocConstansEnum.CONTROLLER_START;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import com.mercadona.poc.infraestructure.service.TraceService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,23 +16,22 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mercadona.poc.domain.StartJobRequest;
-import com.mercadona.poc.infraestructure.service.SSEService;
-import com.mercadona.poc.infraestructure.service.SendFilesService;
 
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
+/**
+ * REST controller for application trace and file upload operations to ovens.
+ */
+@Slf4j
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api")
 public class TraceController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TraceController.class);
+    private final TraceService traceService;
 
-    @Autowired
-    TraceService traceService;
-
-    // API Method to get the current trace
     @ApiOperation(httpMethod = "GET", value = "GET HTTPResponse Value", response = String.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "OK"),
@@ -44,41 +40,47 @@ public class TraceController {
             @ApiResponse(code = 404, message = "Not Found"),
             @ApiResponse(code = 500, message = "Internal Error")
     })
-
-    // Get Method to get the current trace of the application and return a response
     @GetMapping(value = "/trace")
     public ResponseEntity<String> getCurrentTrace() {
         try {
-            LOGGER.info(CONTROLLER_START);
+            log.info(CONTROLLER_START);
             String trace = traceService.getCurrentTrace();
             return new ResponseEntity<>(trace, HttpStatus.OK);
         } catch (Exception e) {
-            LOGGER.error("Error al obtener el rastro actual: {}", e.getMessage());
+            log.error("Error al obtener el rastro actual: {}", e.getMessage());
             return new ResponseEntity<>("Error interno del servidor", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
 
-    // Post Method to send the file to the ovens
+    /**
+     * Sends files to multiple ovens asynchronously.
+     */
     @PostMapping("/sendFile")
-    @Async("customTaskExecutor")
-    public CompletableFuture<ResponseEntity<String>> startJobAsync(@RequestBody StartJobRequest request)
-            throws Exception {
-        LOGGER.info("Current thread name: {}", Thread.currentThread().getName());
-
-        return CompletableFuture.completedFuture(traceService.startJob(request));
+    public ResponseEntity<String> startJob(@RequestBody StartJobRequest request) {
+        try {
+            log.info("Received request to send files to ovens: {}", (Object[]) request.getOvenList());
+            ResponseEntity<String> response = traceService.startJob(request);
+            return response;
+        } catch (Exception e) {
+            log.error("Error processing file send request", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error processing request: " + e.getMessage());
+        }
     }
 
 
-    // Get the list of cook books to send to the frontend
+    /**
+     * Retrieves list of available recipe folders.
+     */
     @GetMapping("/recipes/list")
     public ResponseEntity<List<String>> getRecipeFolders() {
         try {
             List<String> recipes = traceService.getRecipeFolders();
-            return new ResponseEntity<>(recipes, HttpStatus.OK);
+            return ResponseEntity.ok(recipes);
         } catch (Exception e) {
-            LOGGER.error("Error al obtener la lista de carpetas de recetas: {}", e.getMessage());
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            log.error("Error retrieving recipe folders: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
