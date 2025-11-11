@@ -1,0 +1,63 @@
+# Example configuration file
+# Copy this file to application.yml and fill in your actual values
+# Or use environment variables to override these settings
+
+spring:
+  datasource:
+    url: jdbc:h2:file:./mercadonaovens;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+  main:
+    allow-bean-definition-overriding: true
+
+  profiles:
+    active:
+      - ${SPRING_PROFILES_ACTIVE:local}
+  mvc:
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
+
+  cloud:
+    config:
+      enabled: false
+      import: "optional:configserver:"
+
+  servlet:
+    multipart:
+      resolve-lazily: true
+      enabled: true
+      max-file-size: -1
+      max-request-size: 30MB
+      maxFileSize: 10Mb
+      maxRequestSize: 10Mb
+      
+server:
+  tomcat:
+    max-swallow-size: 100MB
+    connection-timeout: 20s
+
+# Application-specific configuration
+# Use environment variables in production: ${SUPERMARKET_USERNAME:default_value}
+supermarket:
+  users:
+    username: ${SUPERMARKET_USERNAME:Administrator}
+    password: ${SUPERMARKET_PASSWORD:changeme}
+  ovens:
+    # Development/testing oven
+    maleta_ferchau: ${OVEN_MALETA_FERCHAU:192.168.0.3}
+    # Add your oven IPs here or use environment variables
+    # laboratorio_itg_3: ${OVEN_LABORATORIO_ITG_3:10.173.31.233}
+
+logging:
+  level:
+    root: INFO
+    com.mercadona.poc: DEBUG
