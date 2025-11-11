@@ -143,9 +143,9 @@
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId> <!-- Add this plugin -->
+				<artifactId>spring-boot-maven-plugin</artifactId> 
 				<configuration>
-					<mainClass>com.mercadona.poc.PocApplication</mainClass> <!-- Replace with your main class -->
+					<mainClass>com.mercadona.poc.PocApplication</mainClass>
 				</configuration>
 			</plugin>
 			<plugin>
