@@ -57,3 +57,5 @@ application-*.yml
 # OS
 .DS_Store
 Thumbs.db
+# Maven build directory
+target/
