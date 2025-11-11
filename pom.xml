@@ -9,7 +9,7 @@
 		<version>2.5.0</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.supermarket</groupId>
+	<groupId>com.supermarket.ovenupdate</groupId>
 	<artifactId>poc-supermarket-backend</artifactId>
 	<version>1.0.0</version>
 	<name>POC Supermarket Backend</name>
@@ -145,7 +145,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId> 
 				<configuration>
-					<mainClass>com.mercadona.poc.PocApplication</mainClass>
+					<mainClass>com.supermarket.ovenupdate.poc.PocApplication</mainClass>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -189,9 +189,9 @@
 						<!-- default target/jscoco/site/* -->
 						<configuration>
 							<excludes>
-								<exclude>com/mercadona/**/*DTO.*</exclude>
-								<exclude>com/mercadona/**/*Application.*</exclude>
-								<exclude>com/mercadona/**/*Test.*</exclude>
+								<exclude>com/supermarket/ovenupdate/**/*DTO.*</exclude>
+								<exclude>com/supermarket/ovenupdate/**/*Application.*</exclude>
+								<exclude>com/supermarket/ovenupdate/**/*Test.*</exclude>
 								<exclude>**/config/*</exclude>
 							</excludes>
 							<outputDirectory>target/jacoco-report</outputDirectory>
